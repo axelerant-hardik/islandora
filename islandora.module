@@ -317,6 +317,51 @@ function islandora_preprocess_node(&$variables) {
 }
 
 /**
+ * Implements hook_form_alter().
+ */
+function islandora_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $media_add_forms = ['media_audio_add_form', 'media_document_add_form',
+    'media_extracted_text_add_form', 'media_file_add_form', 'media_image_add_form',
+    'media_fits_technical_metadata_add_form', 'media_video_add_form',
+  ];
+
+  if (in_array($form['#form_id'], $media_add_forms)) {
+    $params = \Drupal::request()->query->all();
+    if (isset($params['edit'])) {
+      $media_of_nid = $params['edit']['field_media_of']['widget'][0]['target_id'];
+      $node = \Drupal::entityTypeManager()->getStorage('node')->load($media_of_nid);
+      if ($node) {
+        $form['name']['widget'][0]['value']['#default_value'] = $node->getTitle();
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_field_widget_WIDGET_TYPE_form_alter().
+ */
+function islandora_field_widget_image_image_form_alter(&$element, $form_state, $context) {
+  $element['#process'][] = 'islandora_add_default_image_alt_text';
+}
+
+/**
+ * Callback for hook_field_widget_WIDGET_TYPE_form_alter().
+ */
+function islandora_add_default_image_alt_text($element, $form_state, $form) {
+  if ($element['alt']['#access']) {
+    $params = \Drupal::request()->query->all();
+    if (isset($params['edit'])) {
+      $media_of_nid = $params['edit']['field_media_of']['widget'][0]['target_id'];
+      $node = \Drupal::entityTypeManager()->getStorage('node')->load($media_of_nid);
+      if ($node) {
+        $element['alt']['#default_value'] = $node->getTitle();
+      }
+    }
+  }
+  return $element;
+}
+
+/**
  * Implements hook_entity_form_display_alter().
  */
 function islandora_entity_form_display_alter(&$form_display, $context) {
