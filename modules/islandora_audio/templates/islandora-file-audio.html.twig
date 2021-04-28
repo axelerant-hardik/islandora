@@ -15,14 +15,17 @@
 * @ingroup themeable
 */
 #}
+<div id="audioTrack"></div>
 <audio {{ attributes }}>
   {% for file in files %}
     <source {{ file.source_attributes }} />
     {% if tracks %}
     {% for track in tracks %}
-      <track {{ track.track_attributes }}
+      <track {{ track.track_attributes }} />
     {% endfor %}
     {% endif %}
   {% endfor %}
 </audio>
+
+{{ attach_library('islandora_audio/audio') }}
 
