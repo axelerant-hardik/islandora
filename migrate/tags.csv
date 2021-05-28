@@ -15,4 +15,5 @@ islandora_models,"Digital Document","An electronic file or document.",https://sc
 islandora_models,"Paged Content","An Electronic Book, object with pages",https://schema.org/Book
 islandora_models,"Page","A page in an Electronic Paged Content Object",http://id.loc.gov/ontologies/bibframe/part
 islandora_models,"Publication Issue","A part of a successively published publication such as a periodical or publication volume, often numbered, usually containing a grouping of works such as articles.",https://schema.org/PublicationIssue
+islandora_models,"Compound Object","A special type of collection where the parent item may also have complex metadata",http://vocab.getty.edu/aat/300242735
 islandora_models,"Newspaper","A special type of collection which only has Newspaper Issues for children.",https://schema.org/Newspaper
