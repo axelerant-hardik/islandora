@@ -51,7 +51,7 @@ abstract class EmitEvent extends ConfigurableActionBase implements ContainerFact
   protected $stomp;
 
   /**
-   * Event dispatcher service..
+   * Event dispatcher service.
    *
    * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
    */
@@ -74,8 +74,8 @@ abstract class EmitEvent extends ConfigurableActionBase implements ContainerFact
    *   EventGenerator service to serialize AS2 events.
    * @param \Stomp\StatefulStomp $stomp
    *   Stomp client.
-   * @param \Drupal\jwt\Authentication\Provider\JwtAuth $auth
-   *   JWT Auth client.
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
+   *   Event dispatcher service.
    */
   public function __construct(
     array $configuration,
