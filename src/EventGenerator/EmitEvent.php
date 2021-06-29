@@ -9,11 +9,13 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\jwt\Authentication\Provider\JwtAuth;
+use Drupal\islandora\Event\StompHeaderEvent;
+use Drupal\islandora\Event\StompHeaderEventException;
 use Stomp\Exception\StompException;
 use Stomp\StatefulStomp;
 use Stomp\Transport\Message;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Configurable action base for actions that publish messages to queues.
@@ -49,11 +51,11 @@ abstract class EmitEvent extends ConfigurableActionBase implements ContainerFact
   protected $stomp;
 
   /**
-   * The JWT Auth Service.
+   * Event dispatcher service.
    *
-   * @var \Drupal\jwt\Authentication\Provider\JwtAuth
+   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
    */
-  protected $auth;
+  protected $eventDispatcher;
 
   /**
    * Constructs a EmitEvent action.
@@ -72,8 +74,8 @@ abstract class EmitEvent extends ConfigurableActionBase implements ContainerFact
    *   EventGenerator service to serialize AS2 events.
    * @param \Stomp\StatefulStomp $stomp
    *   Stomp client.
-   * @param \Drupal\jwt\Authentication\Provider\JwtAuth $auth
-   *   JWT Auth client.
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
+   *   Event dispatcher service.
    */
   public function __construct(
     array $configuration,
@@ -83,14 +85,14 @@ abstract class EmitEvent extends ConfigurableActionBase implements ContainerFact
     EntityTypeManagerInterface $entity_type_manager,
     EventGeneratorInterface $event_generator,
     StatefulStomp $stomp,
-    JwtAuth $auth
+    EventDispatcherInterface $event_dispatcher
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->account = $account;
     $this->entityTypeManager = $entity_type_manager;
     $this->eventGenerator = $event_generator;
     $this->stomp = $stomp;
-    $this->auth = $auth;
+    $this->eventDispatcher = $event_dispatcher;
   }
 
   /**
@@ -105,7 +107,7 @@ abstract class EmitEvent extends ConfigurableActionBase implements ContainerFact
       $container->get('entity_type.manager'),
       $container->get('islandora.eventgenerator'),
       $container->get('islandora.stomp'),
-      $container->get('jwt.authentication.jwt')
+      $container->get('event_dispatcher')
     );
   }
 
@@ -113,28 +115,25 @@ abstract class EmitEvent extends ConfigurableActionBase implements ContainerFact
    * {@inheritdoc}
    */
   public function execute($entity = NULL) {
-
-    // Include a token for later authentication in the message.
-    $token = $this->auth->generateToken();
-    if (empty($token)) {
-      // JWT isn't properly configured. Log and notify user.
-      \Drupal::logger('islandora')->error(
-        t('Error getting JWT token for message. Check JWT Configuration.')
-      );
-      drupal_set_message(
-        t('Error getting JWT token for message. Check JWT Configuration.'), 'error'
-      );
-      return;
-    }
-
     // Generate event as stomp message.
     try {
       $user = $this->entityTypeManager->getStorage('user')->load($this->account->id());
       $data = $this->generateData($entity);
+
+      $event = $this->eventDispatcher->dispatch(
+        StompHeaderEvent::EVENT_NAME,
+        new StompHeaderEvent($entity, $user, $data, $this->getConfiguration())
+      );
+
       $message = new Message(
         $this->eventGenerator->generateEvent($entity, $user, $data),
-        ['Authorization' => "Bearer $token"]
+        $event->getHeaders()->all()
       );
+    }
+    catch (StompHeaderEventException $e) {
+      \Drupal::logger('islandora')->error($e->getMessage());
+      drupal_set_message($e->getMessage(), 'error');
+      return;
     }
     catch (\RuntimeException $e) {
       // Notify the user the event couldn't be generated and abort.

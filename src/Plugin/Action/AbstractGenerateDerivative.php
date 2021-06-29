@@ -2,18 +2,14 @@
 
 namespace Drupal\islandora\Plugin\Action;
 
-use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Url;
-use Drupal\islandora\IslandoraUtils;
 use Drupal\islandora\EventGenerator\EmitEvent;
-use Drupal\islandora\EventGenerator\EventGeneratorInterface;
+use Drupal\islandora\IslandoraUtils;
 use Drupal\islandora\MediaSource\MediaSourceService;
-use Drupal\jwt\Authentication\Provider\JwtAuth;
 use Drupal\token\TokenInterface;
-use Stomp\StatefulStomp;
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -43,76 +39,16 @@ class AbstractGenerateDerivative extends EmitEvent {
   protected $token;
 
   /**
-   * Constructs a EmitEvent action.
-   *
-   * @param array $configuration
-   *   A configuration array containing information about the plugin instance.
-   * @param string $plugin_id
-   *   The plugin_id for the plugin instance.
-   * @param mixed $plugin_definition
-   *   The plugin implementation definition.
-   * @param \Drupal\Core\Session\AccountInterface $account
-   *   Current user.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   *   Entity type manager.
-   * @param \Drupal\islandora\EventGenerator\EventGeneratorInterface $event_generator
-   *   EventGenerator service to serialize AS2 events.
-   * @param \Stomp\StatefulStomp $stomp
-   *   Stomp client.
-   * @param \Drupal\jwt\Authentication\Provider\JwtAuth $auth
-   *   JWT Auth client.
-   * @param \Drupal\islandora\IslandoraUtils $utils
-   *   Islandora utility functions.
-   * @param \Drupal\islandora\MediaSource\MediaSourceService $media_source
-   *   Media source service.
-   * @param \Drupal\token\TokenInterface $token
-   *   Token service.
-   */
-  public function __construct(
-    array $configuration,
-    $plugin_id,
-    $plugin_definition,
-    AccountInterface $account,
-    EntityTypeManagerInterface $entity_type_manager,
-    EventGeneratorInterface $event_generator,
-    StatefulStomp $stomp,
-    JwtAuth $auth,
-    IslandoraUtils $utils,
-    MediaSourceService $media_source,
-    TokenInterface $token
-  ) {
-    parent::__construct(
-      $configuration,
-      $plugin_id,
-      $plugin_definition,
-      $account,
-      $entity_type_manager,
-      $event_generator,
-      $stomp,
-      $auth
-    );
-    $this->utils = $utils;
-    $this->mediaSource = $media_source;
-    $this->token = $token;
-  }
-
-  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static(
-      $configuration,
-      $plugin_id,
-      $plugin_definition,
-      $container->get('current_user'),
-      $container->get('entity_type.manager'),
-      $container->get('islandora.eventgenerator'),
-      $container->get('islandora.stomp'),
-      $container->get('jwt.authentication.jwt'),
-      $container->get('islandora.utils'),
-      $container->get('islandora.media_source_service'),
-      $container->get('token')
-    );
+    $instance = parent::create($container, $configuration, $plugin_id, $plugin_definition);
+
+    $instance->setUtilsService($container->get('islandora.utils'));
+    $instance->setMediaSourceService($container->get('islandora.media_source_service'));
+    $instance->setTokenService($container->get('token'));
+
+    return $instance;
   }
 
   /**
@@ -332,6 +268,27 @@ class AbstractGenerateDerivative extends EmitEvent {
       return $this->entityTypeManager->getStorage('media_type')->load($id);
     }
     return '';
+  }
+
+  /**
+   * Setter for the Islanodra utils service.
+   */
+  public function setUtilsService(IslandoraUtils $utils) {
+    $this->utils = $utils;
+  }
+
+  /**
+   * Setter for the media source service.
+   */
+  public function setMediaSourceService(MediaSourceService $media_source) {
+    $this->mediaSource = $media_source;
+  }
+
+  /**
+   * Setter for the token service.
+   */
+  public function setTokenService(TokenInterface $token) {
+    $this->token = $token;
   }
 
 }
