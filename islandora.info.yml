@@ -32,3 +32,4 @@ dependencies:
   - drupal:flysystem
   - drupal:token
   - drupal:file_replace
+  - ctools:ctools
