@@ -133,12 +133,19 @@ class TypeSelectionForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $this->cacheableMetadata = CacheableMetadata::createFromRenderArray($form);
+    $this->cacheableMetadata = CacheableMetadata::createFromRenderArray($form)
+      ->addCacheContexts([
+        'url',
+        'url.query_args',
+      ]);
+    $cached_values = $form_state->getTemporaryValue('wizard');
 
     $form['bundle'] = [
       '#type' => 'select',
       '#title' => $this->t('Content Type'),
       '#description' => $this->t('Each child created will have this content type.'),
+      '#empty_value' => '',
+      '#default_value' => $cached_values['bundle'] ?? '',
       '#options' => $this->getNodeBundleOptions(),
       '#required' => TRUE,
     ];
@@ -149,6 +156,8 @@ class TypeSelectionForm extends FormBase {
       '#title' => $this->t('Model'),
       '#description' => $this->t('Each child will be tagged with this model.'),
       '#options' => iterator_to_array($this->getModelOptions()),
+      '#empty_value' => '',
+      '#default_value' => $cached_values['model'] ?? '',
       '#states' => [
         'visible' => [
           ':input[name="bundle"]' => $model_states,
@@ -162,6 +171,8 @@ class TypeSelectionForm extends FormBase {
       '#type' => 'select',
       '#title' => $this->t('Media Type'),
       '#description' => $this->t('Each media created will have this type.'),
+      '#empty_value' => '',
+      '#default_value' => $cached_values['media_type'] ?? '',
       '#options' => $this->getMediaBundleOptions(),
       '#required' => TRUE,
     ];
@@ -173,6 +184,7 @@ class TypeSelectionForm extends FormBase {
         ':url' => 'https://pcdm.org/2015/05/12/use',
       ]),
       '#options' => iterator_to_array($this->getMediaUseOptions()),
+      '#default_value' => $cached_values['use'] ?? [],
       '#states' => [
         'visible' => [
           ':input[name="media_type"]' => $use_states,
@@ -191,6 +203,17 @@ class TypeSelectionForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // TODO: Implement submitForm() method.
+    $keys = [
+      'bundle',
+      'model',
+      'media_type',
+      'use',
+    ];
+    $cached_values = $form_state->getTemporaryValue('wizard');
+    foreach ($keys as $key) {
+      $cached_values[$key] = $form_state->getValue($key);
+    }
+    $form_state->setTemporaryValue('wizard', $cached_values);
   }
+
 }
