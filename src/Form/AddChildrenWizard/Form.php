@@ -2,10 +2,8 @@
 
 namespace Drupal\islandora\Form\AddChildrenWizard;
 
-use Drupal\Core\Access\AccessResult;
 use Drupal\Core\DependencyInjection\ClassResolverInterface;
 use Drupal\Core\Form\FormBuilderInterface;
-use Drupal\Core\Routing\RouteMatch;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\TempStore\SharedTempStoreFactory;
@@ -56,8 +54,6 @@ class Form extends FormWizardBase {
     EventDispatcherInterface $event_dispatcher,
     RouteMatchInterface $route_match,
     $tempstore_id,
-    IslandoraUtils $utils,
-    RouteMatchInterface $current_route_match,
     AccountProxyInterface $current_user,
     $machine_name = NULL,
     $step = NULL
@@ -65,9 +61,7 @@ class Form extends FormWizardBase {
     parent::__construct($tempstore, $builder, $class_resolver, $event_dispatcher, $route_match, $tempstore_id,
       $machine_name, $step);
 
-    $this->utils = $utils;
-    $this->currentRoute = $current_route_match;
-    $this->nodeId = $this->currentRoute->getParameter('node');
+    $this->nodeId = $this->routeMatch->getParameter('node');
     $this->currentUser = $current_user;
   }
 
@@ -78,10 +72,9 @@ class Form extends FormWizardBase {
     return array_merge(
       parent::getParameters(),
       [
-        'utils' => \Drupal::service('islandora.utils'),
         'tempstore_id' => 'islandora.upload_children',
-        'current_route_match' => \Drupal::service('current_route_match'),
         'current_user' => \Drupal::service('current_user'),
+        'batch_processor' => \Drupal::service('islandora.upload_children.batch_processor'),
       ]
     );
   }
