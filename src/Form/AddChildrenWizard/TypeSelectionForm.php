@@ -3,25 +3,50 @@
 namespace Drupal\islandora\Form\AddChildrenWizard;
 
 use Drupal\Core\Cache\CacheableMetadata;
-use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\islandora\IslandoraUtils;
-use Drupal\taxonomy\TermInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use function Symfony\Component\DependencyInjection\Loader\Configurator\iterator;
 
+/**
+ * Children addition wizard's first step.
+ */
 class TypeSelectionForm extends FormBase {
 
+  /**
+   * Cacheable metadata that is instantiated and used internally.
+   *
+   * @var \Drupal\Core\Cache\CacheableMetadata|null
+   */
   protected ?CacheableMetadata $cacheableMetadata = NULL;
+
+  /**
+   * The entity type bundle info service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface|null
+   */
   protected ?EntityTypeBundleInfoInterface $entityTypeBundleInfo;
+
+  /**
+   * The entity type manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface|null
+   */
   protected ?EntityTypeManagerInterface $entityTypeManager;
+
+  /**
+   * The entity field manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface|null
+   */
   protected ?EntityFieldManagerInterface $entityFieldManager;
 
-
+  /**
+   * {@inheritdoc}
+   */
   public static function create(ContainerInterface $container) {
     $instance = parent::create($container);
 
@@ -39,14 +64,33 @@ class TypeSelectionForm extends FormBase {
     return 'islandora_add_children_type_selection';
   }
 
+  /**
+   * Memoization for ::getNodeBundleOptions().
+   *
+   * @var array|null
+   */
   protected ?array $nodeBundleOptions = NULL;
+
+  /**
+   * Indicate presence of model field on node bundles.
+   *
+   * Populated as a side effect of ::getNodeBundleOptions().
+   *
+   * @var array|null
+   */
   protected ?array $nodeBundleHasModelField = NULL;
-  //protected ?array $nodeBundleHasMemberOfField = NULL;
+
+  /**
+   * Helper; get the node bundle options available to the current user.
+   *
+   * @return array
+   *   An associative array mapping node bundle machine names to their human-
+   *   readable labels.
+   */
   protected function getNodeBundleOptions() : array {
     if ($this->nodeBundleOptions === NULL) {
       $this->nodeBundleOptions = [];
       $this->nodeBundleHasModelField = [];
-      //$this->nodeBundleHasMemberOfField = [];
 
       $access_handler = $this->entityTypeManager->getAccessControlHandler('node');
       foreach ($this->entityTypeBundleInfo->getBundleInfo('node') as $bundle => $info) {
@@ -62,7 +106,6 @@ class TypeSelectionForm extends FormBase {
         }
         $this->nodeBundleOptions[$bundle] = $info['label'];
         $fields = $this->entityFieldManager->getFieldDefinitions('node', $bundle);
-        //$this->nodeBundleHasMemberOfField[$bundle] = array_key_exists(IslandoraUtils::MEMBER_OF_FIELD, $fields);
         $this->nodeBundleHasModelField[$bundle] = array_key_exists(IslandoraUtils::MODEL_FIELD, $fields);
       }
     }
@@ -70,7 +113,16 @@ class TypeSelectionForm extends FormBase {
     return $this->nodeBundleOptions;
   }
 
-  protected function getModelOptions() : \Traversable {
+  /**
+   * Generates a mapping of taxonomy term IDs to their names.
+   *
+   * @return \Generator
+   *   The mapping of taxonomy term IDs to their names.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
+  protected function getModelOptions() : \Generator {
     $terms = $this->entityTypeManager->getStorage('taxonomy_term')
       ->loadTree('islandora_models', 0, NULL, TRUE);
     foreach ($terms as $term) {
@@ -78,15 +130,43 @@ class TypeSelectionForm extends FormBase {
     }
   }
 
-  protected function mapModelStates() : \Traversable {
+  /**
+   * Helper; map node bundles supporting the "has model" field, for #states.
+   *
+   * @return \Generator
+   *   Yields associative array mapping the string 'value' to the bundles which
+   *   have the given field.
+   */
+  protected function mapModelStates() : \Generator {
     $this->getNodeBundleOptions();
     foreach (array_keys(array_filter($this->nodeBundleHasModelField)) as $bundle) {
       yield ['value' => $bundle];
     }
   }
 
+  /**
+   * Memoization for ::getMediaBundleOptions().
+   *
+   * @var array|null
+   */
   protected ?array $mediaBundleOptions = NULL;
+
+  /**
+   * Indicate presence of usage field on media bundles.
+   *
+   * Populated as a side effect in ::getMediaBundleOptions().
+   *
+   * @var array|null
+   */
   protected ?array $mediaBundleUsageField = NULL;
+
+  /**
+   * Helper; get options for media types.
+   *
+   * @return array
+   *   An associative array mapping the machine name of the media type to its
+   *   human-readable label.
+   */
   protected function getMediaBundleOptions() : array {
     if ($this->mediaBundleOptions === NULL) {
       $this->mediaBundleOptions = [];
@@ -113,16 +193,33 @@ class TypeSelectionForm extends FormBase {
     return $this->mediaBundleOptions;
   }
 
+  /**
+   * Helper; list the terms of the "islandora_media_use" vocabulary.
+   *
+   * @return \Generator
+   *   Generates term IDs as keys mapping to term names.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
   protected function getMediaUseOptions() {
-    /** @var TermInterface[] $terms */
-    $terms =  $this->entityTypeManager->getStorage('taxonomy_term')
+    /** @var \Drupal\taxonomy\TermInterface[] $terms */
+    $terms = $this->entityTypeManager->getStorage('taxonomy_term')
       ->loadTree('islandora_media_use', 0, NULL, TRUE);
 
     foreach ($terms as $term) {
       yield $term->id() => $term->getName();
     }
   }
-  protected function mapUseStates() {
+
+  /**
+   * Helper; map media types supporting the usage field for use with #states.
+   *
+   * @return \Generator
+   *   Yields associative array mapping the string 'value' to the bundles which
+   *   have the given field.
+   */
+  protected function mapUseStates(): \Generator {
     $this->getMediaBundleOptions();
     foreach (array_keys(array_filter($this->mediaBundleUsageField)) as $bundle) {
       yield ['value' => $bundle];
@@ -165,7 +262,7 @@ class TypeSelectionForm extends FormBase {
         'required' => [
           ':input[name="bundle"]' => $model_states,
         ],
-      ]
+      ],
     ];
     $form['media_type'] = [
       '#type' => 'select',

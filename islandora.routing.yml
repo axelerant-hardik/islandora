@@ -37,16 +37,6 @@ islandora.add_member_to_node_page:
     _entity_create_any_access: 'node'
 
 islandora.upload_children:
-  path: '/node/{node}/members/upload_old'
-  defaults:
-    _form: '\Drupal\islandora\Form\AddChildrenForm'
-    _title: 'Upload Children'
-  options:
-    _admin_route: 'TRUE'
-  requirements:
-    _custom_access: '\Drupal\islandora\Form\AddChildrenForm::access'
-
-islandora.upload_children_wizard:
   path: '/node/{node}/members/upload/{step}'
   defaults:
     _wizard: '\Drupal\islandora\Form\AddChildrenWizard\Form'
@@ -55,8 +45,7 @@ islandora.upload_children_wizard:
   options:
     _admin_route: 'TRUE'
   requirements:
-    #_custom_access: '\Drupal\islandora\Form\AddChildrenWizard\Form::access'
-    _custom_access: '\Drupal\islandora\Form\AddChildrenForm::access'
+    _custom_access: '\Drupal\islandora\Form\AddChildrenWizard\Access::checkAccess'
 
 islandora.add_media_to_node_page:
   path: '/node/{node}/media/add'
