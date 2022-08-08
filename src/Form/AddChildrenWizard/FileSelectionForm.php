@@ -19,8 +19,10 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Queue\QueueFactory;
 use Drupal\Core\Queue\QueueInterface;
 use Drupal\Core\Session\AccountProxyInterface;
+use Drupal\Core\Url;
 use Drupal\file\FileInterface;
 use Drupal\islandora\IslandoraUtils;
+use Drupal\media\MediaInterface;
 use Drupal\media\MediaSourceInterface;
 use Drupal\media\MediaTypeInterface;
 use Drupal\node\NodeInterface;
@@ -45,7 +47,7 @@ class FileSelectionForm extends FormBase {
 
   protected ?AccountProxyInterface $currentUser;
 
-  public static function create(ContainerInterface $container) {
+  public static function create(ContainerInterface $container): self {
     $instance =  parent::create($container);
 
     $instance->entityTypeManager = $container->get('entity_type.manager');
@@ -92,8 +94,12 @@ class FileSelectionForm extends FormBase {
   }
 
   protected function getWidget(FormStateInterface $form_state) : WidgetInterface {
+    return $this->doGetWidget($this->getField($form_state));
+  }
+
+  protected function doGetWidget(FieldDefinitionInterface $field) : WidgetInterface {
     return $this->widgetPluginManager->getInstance([
-      'field_definition' => $this->getField($form_state),
+      'field_definition' => $field,
       'form_mode' => 'default',
       'prepare' => TRUE,
     ]);
@@ -125,26 +131,37 @@ class FileSelectionForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $cached_values = $form_state->getTemporaryValue('wizard');
 
+    dsm($form);
     dsm($form_state);
+    dsm($this->doGetField($cached_values));
+    dsm($this->doGetField($cached_values)->getName());
 
+    $widget = $this->getWidget($form_state);
     $builder = (new BatchBuilder())
       ->setTitle($this->t('Creating children...'))
       ->setInitMessage($this->t('Initializing...'))
       ->setFinishCallback([$this, 'batchProcessFinished']);
-    foreach ($form_state->getValue($this->doGetField($cached_values)->getName()) as $file) {
-      $builder->addOperation([$this, 'batchProcess'], [$file, $cached_values]);
+    $values = $form_state->getValue($this->doGetField($cached_values)->getName());
+    $massaged_values = $widget->massageFormValues($values, $form, $form_state);
+    dsm($values);
+    dsm($massaged_values);
+    foreach ($massaged_values as $delta => $file) {
+      dsm($file);
+      $builder->addOperation([$this, 'batchProcess'], [$delta, $file, $form, $form_state, $cached_values]);
     }
     batch_set($builder->toArray());
+    $form_state->setRedirectUrl(Url::fromUri("internal:/node/{$cached_values['node']}/members"));
   }
 
-  public function batchProcess($fid, array $values, &$context) {
+  public function batchProcess($delta, $info, array $form, FormStateInterface $form_state, array $values, &$context) {
     $transaction = \Drupal::database()->startTransaction();
 
     try {
       $taxonomy_term_storage = $this->entityTypeManager->getStorage('taxonomy_term');
 
+      dsm(func_get_args());
       /** @var FileInterface $file */
-      $file = $this->entityTypeManager->getStorage('file')->load($fid);
+      $file = $this->entityTypeManager->getStorage('file')->load($info['target_id']);
       $file->setPermanent();
       if ($file->save() !== SAVED_UPDATED) {
         throw new \Exception("Failed to update file '{$file->id()}' to be permanent.");
@@ -169,15 +186,32 @@ class FileSelectionForm extends FormBase {
       }
 
       // Create a media with the file attached and also pointing at the node.
-      $media = $this->entityTypeManager->getStorage('media')->create([
-        'bundle' => $values['media_type'],
-        'name' => $file->getFilename(),
-        IslandoraUtils::MEDIA_OF_FIELD => $node,
-        IslandoraUtils::MEDIA_USAGE_FIELD => $values['use'] ?
-          $taxonomy_term_storage->loadMultiple($values['use']) :
-          NULL,
-        $this->doGetField($values)->getName() => $file->id(),
-      ]);
+      $field = $this->doGetField($values);
+      $widget = $this->doGetWidget($field);
+      $items = FieldItemList::createInstance($field, $field->getName(), $this->getMediaType($form_state)->getTypedData());
+      $items->setValue([0 => $info]);
+      //$items->setValue([$delta => $info]);
+
+      $media_values = array_merge(
+        [
+          'bundle' => $values['media_type'],
+          'name' => $file->getFilename(),
+          IslandoraUtils::MEDIA_OF_FIELD => $node,
+          IslandoraUtils::MEDIA_USAGE_FIELD => $values['use'] ?
+            $taxonomy_term_storage->loadMultiple($values['use']) :
+            NULL,
+          'uid' => $this->currentUser->id(),
+          // XXX: Published... no constant?
+          'status' => 1,
+        ],
+        [
+          $field->getName() => [
+            $info,
+          ],
+        ]
+      );
+      dsm($media_values);
+      $media = $this->entityTypeManager->getStorage('media')->create($media_values);
       if ($media->save() !== SAVED_NEW) {
         throw new \Exception("Failed to create media for file '{$file->id()}.");
       }

@@ -83,10 +83,16 @@ class Form extends FormWizardBase {
       'child_type' => [
         'title' => $this->t('Type of children'),
         'form' => TypeSelectionForm::class,
+        'values' => [
+          'node' => $this->nodeId,
+        ]
       ],
       'child_files' => [
         'title' => $this->t('Files for children'),
         'form' => FileSelectionForm::class,
+        'values' => [
+          'node' => $this->nodeId,
+        ]
       ]
     ];
   }
