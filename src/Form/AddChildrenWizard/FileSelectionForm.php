@@ -43,9 +43,9 @@ class FileSelectionForm extends FormBase {
   /**
    * The batch processor service.
    *
-   * @var \Drupal\islandora\Form\AddChildrenWizard\BatchProcessor|null
+   * @var \Drupal\islandora\Form\AddChildrenWizard\ChildBatchProcessor|null
    */
-  protected ?BatchProcessor $batchProcessor;
+  protected ?ChildBatchProcessor $batchProcessor;
 
   /**
    * {@inheritdoc}

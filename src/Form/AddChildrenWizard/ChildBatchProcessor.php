@@ -14,7 +14,7 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 /**
  * Children addition batch processor.
  */
-class BatchProcessor {
+class ChildBatchProcessor {
 
   use FieldTrait;
 
@@ -171,8 +171,8 @@ class BatchProcessor {
         foreach ($info as $id => $count) {
           $this->messenger()->addWarning($this->formatPlural(
             $count,
-            '1 validation error present in <a href=":uri">bulk created entity of type %type, with ID %id</a>.',
-            '@count validation errors present in <a href=":uri">bulk created entity of type %type, with ID %id</a>.',
+            '1 validation error present in <a target="_blank" href=":uri">bulk created entity of type %type, with ID %id</a>.',
+            '@count validation errors present in <a target="_blank" href=":uri">bulk created entity of type %type, with ID %id</a>.',
             [
               '%type' => $entity_type,
               ':uri' => Url::fromRoute("entity.{$entity_type}.canonical", [$entity_type => $id])->toString(),

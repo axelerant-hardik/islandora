@@ -60,7 +60,7 @@ services:
     tags:
       - { name: event_subscriber }
   islandora.upload_children.batch_processor:
-    class: Drupal\islandora\Form\AddChildrenWizard\BatchProcessor
+    class: Drupal\islandora\Form\AddChildrenWizard\ChildBatchProcessor
     arguments:
       - '@entity_type.manager'
       - '@database'
