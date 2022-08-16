@@ -75,7 +75,6 @@ abstract class AbstractBatchProcessor {
     $transaction = $this->database->startTransaction();
 
     try {
-      $entities[] = $this->persistFile($info, $values);
       $entities[] = $node = $this->getNode($info, $values);
       $entities[] = $this->createMedia($node, $info, $values);
 
@@ -109,30 +108,6 @@ abstract class AbstractBatchProcessor {
    */
   protected function getFile(array $info) : FileInterface {
     return $this->entityTypeManager->getStorage('file')->load($info['target_id']);
-  }
-
-  /**
-   * Loads and marks the target file as permanent.
-   *
-   * @param array $info
-   *   An associative array containing at least:
-   *   - target_id: The id of the file to load.
-   *
-   * @return \Drupal\file\FileInterface
-   *   The loaded file, after it has been marked as permanent.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
-   * @throws \Drupal\Core\Entity\EntityStorageException
-   */
-  protected function persistFile(array $info) : FileInterface {
-    $file = $this->getFile($info);
-    $file->setPermanent();
-    if ($file->save() !== SAVED_UPDATED) {
-      throw new \Exception("Failed to update file '{$file->id()}' to be permanent.");
-    }
-
-    return $file;
   }
 
   /**
