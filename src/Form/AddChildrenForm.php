@@ -12,8 +12,6 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Form that lets users upload one or more files as children to a resource node.
- *
- * @deprecated Use the \Drupal\islandora\Form\AddChildrenWizard\ChildForm instead.
  */
 class AddChildrenForm extends AddMediaForm {
 
