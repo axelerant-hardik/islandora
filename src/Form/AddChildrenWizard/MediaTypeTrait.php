@@ -31,7 +31,6 @@ trait MediaTypeTrait {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   protected function getMediaType(array $values): MediaTypeInterface {
-    /** @var \Drupal\media\MediaTypeInterface $media_type */
     return $this->entityTypeManager()->getStorage('media_type')->load($values['media_type']);
   }
 

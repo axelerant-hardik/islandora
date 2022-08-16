@@ -31,9 +31,9 @@ abstract class AbstractForm extends FormWizardBase {
   /**
    * The current node ID.
    *
-   * @var string|mixed|null
+   * @var mixed|null
    */
-  protected string $nodeId;
+  protected $nodeId;
 
   /**
    * The current route match.
@@ -90,14 +90,14 @@ abstract class AbstractForm extends FormWizardBase {
     $ops = [];
 
     $ops['type_selection'] = [
-      'title' => $this->t('Type of children'),
+      'title' => $this->t('Type Selection'),
       'form' => static::TYPE_SELECTION_FORM,
       'values' => [
         'node' => $this->nodeId,
       ],
     ];
     $ops['file_selection'] = [
-      'title' => $this->t('Files for children'),
+      'title' => $this->t('Widget Input for Selected Type'),
       'form' => static::FILE_SELECTION_FORM,
       'values' => [
         'node' => $this->nodeId,

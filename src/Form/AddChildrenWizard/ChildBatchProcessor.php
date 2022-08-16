@@ -13,18 +13,17 @@ class ChildBatchProcessor extends AbstractBatchProcessor {
   /**
    * {@inheritdoc}
    */
-  protected function getNode(array $info, array $values) : NodeInterface {
+  protected function getNode($info, array $values) : NodeInterface {
     $taxonomy_term_storage = $this->entityTypeManager->getStorage('taxonomy_term');
     $node_storage = $this->entityTypeManager->getStorage('node');
     $parent = $node_storage->load($values['node']);
-    $file = $this->getFile($info);
 
     // Create a node (with the filename?) (and also belonging to the target
     // node).
     /** @var \Drupal\node\NodeInterface $node */
     $node = $node_storage->create([
       'type' => $values['bundle'],
-      'title' => $file->getFilename(),
+      'title' => $this->getName($info, $values),
       IslandoraUtils::MEMBER_OF_FIELD => $parent,
       'uid' => $this->currentUser->id(),
       'status' => NodeInterface::PUBLISHED,
@@ -34,7 +33,7 @@ class ChildBatchProcessor extends AbstractBatchProcessor {
     ]);
 
     if ($node->save() !== SAVED_NEW) {
-      throw new \Exception("Failed to create node for file '{$file->id()}'.");
+      throw new \Exception("Failed to create node.");
     }
 
     return $node;

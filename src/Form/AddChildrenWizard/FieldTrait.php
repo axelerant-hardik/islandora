@@ -39,7 +39,7 @@ trait FieldTrait {
     $fields = $this->entityFieldManager()->getFieldDefinitions('media', $media_type->id());
 
     return $fields[$source_field->getFieldStorageDefinition()->getName()] ??
-      $media_source->createSourceField();
+      $media_source->createSourceField($media_type);
   }
 
   /**

@@ -3,6 +3,7 @@
 namespace Drupal\islandora\Form\AddChildrenWizard;
 
 use Drupal\Core\Batch\BatchBuilder;
+use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemList;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
@@ -10,6 +11,7 @@ use Drupal\Core\Field\WidgetInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountProxyInterface;
+use Drupal\field\FieldStorageConfigInterface;
 use Drupal\media\MediaTypeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -81,7 +83,16 @@ abstract class AbstractFileSelectionForm extends FormBase {
     $cached_values = $form_state->getTemporaryValue('wizard');
 
     $field = $this->getField($cached_values);
-    $field->getFieldStorageDefinition()->set('cardinality', FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED);
+    $def = $field->getFieldStorageDefinition();
+    if ($def instanceof FieldStorageConfigInterface) {
+      $def->set('cardinality', FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED);
+    }
+    elseif ($def instanceof BaseFieldDefinition) {
+      $def->setCardinality(FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED);
+    }
+    else {
+      throw new \Exception('Unable to remove cardinality limit.');
+    }
 
     return $field;
   }
@@ -129,7 +140,7 @@ abstract class AbstractFileSelectionForm extends FormBase {
 
     $widget = $this->getWidgetFromFormState($form_state);
     $builder = (new BatchBuilder())
-      ->setTitle($this->t('Creating children...'))
+      ->setTitle($this->t('Bulk creating...'))
       ->setInitMessage($this->t('Initializing...'))
       ->setFinishCallback([$this->batchProcessor, 'batchProcessFinished']);
     $values = $form_state->getValue($this->getField($cached_values)->getName());

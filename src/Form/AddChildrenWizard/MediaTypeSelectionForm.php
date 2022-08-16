@@ -45,14 +45,22 @@ class MediaTypeSelectionForm extends FormBase {
   protected ?EntityFieldManagerInterface $entityFieldManager;
 
   /**
+   * The Islandora Utils service.
+   *
+   * @var \Drupal\islandora\IslandoraUtils|null
+   */
+  protected ?IslandoraUtils $utils;
+
+  /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container) {
+  public static function create(ContainerInterface $container) : self {
     $instance = parent::create($container);
 
     $instance->entityTypeBundleInfo = $container->get('entity_type.bundle.info');
     $instance->entityTypeManager = $container->get('entity_type.manager');
     $instance->entityFieldManager = $container->get('entity_field.manager');
+    $instance->utils = $container->get('islandora.utils');
 
     return $instance;
   }
@@ -60,7 +68,7 @@ class MediaTypeSelectionForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormId() : string {
     return 'islandora_add_media_type_selection';
   }
 
@@ -94,6 +102,9 @@ class MediaTypeSelectionForm extends FormBase {
 
       $access_handler = $this->entityTypeManager->getAccessControlHandler('media');
       foreach ($this->entityTypeBundleInfo->getBundleInfo('media') as $bundle => $info) {
+        if (!$this->utils->isIslandoraType('media', $bundle)) {
+          continue;
+        }
         $access = $access_handler->createAccess(
           $bundle,
           NULL,
@@ -122,7 +133,7 @@ class MediaTypeSelectionForm extends FormBase {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  protected function getMediaUseOptions() {
+  protected function getMediaUseOptions() : \Generator {
     /** @var \Drupal\taxonomy\TermInterface[] $terms */
     $terms = $this->entityTypeManager->getStorage('taxonomy_term')
       ->loadTree('islandora_media_use', 0, NULL, TRUE);
@@ -195,7 +206,7 @@ class MediaTypeSelectionForm extends FormBase {
    * @return string[]
    *   The keys to be persisted in our temp value in form state.
    */
-  protected static function keysToSave() {
+  protected static function keysToSave() : array {
     return [
       'media_type',
       'use',

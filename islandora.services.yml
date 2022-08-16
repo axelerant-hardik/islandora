@@ -66,6 +66,7 @@ services:
       - '@database'
       - '@current_user'
       - '@messenger'
+      - '@date.formatter'
   islandora.upload_media.batch_processor:
     class: Drupal\islandora\Form\AddChildrenWizard\MediaBatchProcessor
     arguments:
@@ -73,3 +74,4 @@ services:
       - '@database'
       - '@current_user'
       - '@messenger'
+      - '@date.formatter'

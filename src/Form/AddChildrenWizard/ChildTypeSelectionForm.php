@@ -14,7 +14,7 @@ class ChildTypeSelectionForm extends MediaTypeSelectionForm {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormId() : string {
     return 'islandora_add_children_type_selection';
   }
 
@@ -144,7 +144,7 @@ class ChildTypeSelectionForm extends MediaTypeSelectionForm {
   /**
    * {@inheritdoc}
    */
-  protected static function keysToSave() {
+  protected static function keysToSave() : array {
     return array_merge(
       parent::keysToSave(),
       [

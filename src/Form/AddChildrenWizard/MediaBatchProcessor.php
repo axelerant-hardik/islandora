@@ -12,7 +12,7 @@ class MediaBatchProcessor extends AbstractBatchProcessor {
   /**
    * {@inheritdoc}
    */
-  protected function getNode(array $info, array $values) : NodeInterface {
+  protected function getNode($info, array $values) : NodeInterface {
     return $this->entityTypeManager->getStorage('node')->load($values['node']);
   }
 
