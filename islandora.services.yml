@@ -65,3 +65,11 @@ services:
       - '@entity_type.manager'
       - '@database'
       - '@current_user'
+      - '@messenger'
+  islandora.upload_media.batch_processor:
+    class: Drupal\islandora\Form\AddChildrenWizard\MediaBatchProcessor
+    arguments:
+      - '@entity_type.manager'
+      - '@database'
+      - '@current_user'
+      - '@messenger'

@@ -3,7 +3,6 @@
 namespace Drupal\islandora\Form\AddChildrenWizard;
 
 use Drupal\Core\Batch\BatchBuilder;
-use Drupal\Core\Database\Connection;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemList;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
@@ -11,27 +10,17 @@ use Drupal\Core\Field\WidgetInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountProxyInterface;
-use Drupal\Core\Url;
 use Drupal\media\MediaTypeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Children addition wizard's second step.
  */
-class FileSelectionForm extends FormBase {
+abstract class AbstractFileSelectionForm extends FormBase {
 
-  use WizardTrait {
-    WizardTrait::getField as doGetField;
-    WizardTrait::getMediaType as doGetMediaType;
-    WizardTrait::getWidget as doGetWidget;
-  }
+  use WizardTrait;
 
-  /**
-   * The database connection serivce.
-   *
-   * @var \Drupal\Core\Database\Connection|null
-   */
-  protected ?Connection $database;
+  const BATCH_PROCESSOR = 'abstract.abstract';
 
   /**
    * The current user.
@@ -43,9 +32,9 @@ class FileSelectionForm extends FormBase {
   /**
    * The batch processor service.
    *
-   * @var \Drupal\islandora\Form\AddChildrenWizard\ChildBatchProcessor|null
+   * @var \Drupal\islandora\Form\AddChildrenWizard\AbstractBatchProcessor|null
    */
-  protected ?ChildBatchProcessor $batchProcessor;
+  protected ?AbstractBatchProcessor $batchProcessor;
 
   /**
    * {@inheritdoc}
@@ -56,19 +45,11 @@ class FileSelectionForm extends FormBase {
     $instance->entityTypeManager = $container->get('entity_type.manager');
     $instance->widgetPluginManager = $container->get('plugin.manager.field.widget');
     $instance->entityFieldManager = $container->get('entity_field.manager');
-    $instance->database = $container->get('database');
     $instance->currentUser = $container->get('current_user');
 
-    $instance->batchProcessor = $container->get('islandora.upload_children.batch_processor');
+    $instance->batchProcessor = $container->get(static::BATCH_PROCESSOR);
 
     return $instance;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getFormId() {
-    return 'islandora_add_children_wizard_file_selection';
   }
 
   /**
@@ -83,8 +64,8 @@ class FileSelectionForm extends FormBase {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  protected function getMediaType(FormStateInterface $form_state): MediaTypeInterface {
-    return $this->doGetMediaType($form_state->getTemporaryValue('wizard'));
+  protected function getMediaTypeFromFormState(FormStateInterface $form_state): MediaTypeInterface {
+    return $this->getMediaType($form_state->getTemporaryValue('wizard'));
   }
 
   /**
@@ -96,10 +77,10 @@ class FileSelectionForm extends FormBase {
    * @return \Drupal\Core\Field\FieldDefinitionInterface
    *   The field definition.
    */
-  protected function getField(FormStateInterface $form_state): FieldDefinitionInterface {
+  protected function getFieldFromFormState(FormStateInterface $form_state): FieldDefinitionInterface {
     $cached_values = $form_state->getTemporaryValue('wizard');
 
-    $field = $this->doGetField($cached_values);
+    $field = $this->getField($cached_values);
     $field->getFieldStorageDefinition()->set('cardinality', FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED);
 
     return $field;
@@ -114,8 +95,8 @@ class FileSelectionForm extends FormBase {
    * @return \Drupal\Core\Field\WidgetInterface
    *   The widget.
    */
-  protected function getWidget(FormStateInterface $form_state): WidgetInterface {
-    return $this->doGetWidget($this->getField($form_state));
+  protected function getWidgetFromFormState(FormStateInterface $form_state): WidgetInterface {
+    return $this->getWidget($this->getFieldFromFormState($form_state));
   }
 
   /**
@@ -125,12 +106,12 @@ class FileSelectionForm extends FormBase {
     // Using the media type selected in the previous step, grab the
     // media bundle's "source" field, and create a multi-file upload widget
     // for it, with the same kind of constraints.
-    $field = $this->getField($form_state);
-    $items = FieldItemList::createInstance($field, $field->getName(), $this->getMediaType($form_state)->getTypedData());
+    $field = $this->getFieldFromFormState($form_state);
+    $items = FieldItemList::createInstance($field, $field->getName(), $this->getMediaTypeFromFormState($form_state)->getTypedData());
 
     $form['#tree'] = TRUE;
     $form['#parents'] = [];
-    $widget = $this->getWidget($form_state);
+    $widget = $this->getWidgetFromFormState($form_state);
     $form['files'] = $widget->form(
       $items,
       $form,
@@ -146,21 +127,20 @@ class FileSelectionForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $cached_values = $form_state->getTemporaryValue('wizard');
 
-    $widget = $this->getWidget($form_state);
+    $widget = $this->getWidgetFromFormState($form_state);
     $builder = (new BatchBuilder())
       ->setTitle($this->t('Creating children...'))
       ->setInitMessage($this->t('Initializing...'))
       ->setFinishCallback([$this->batchProcessor, 'batchProcessFinished']);
-    $values = $form_state->getValue($this->doGetField($cached_values)->getName());
+    $values = $form_state->getValue($this->getField($cached_values)->getName());
     $massaged_values = $widget->massageFormValues($values, $form, $form_state);
-    foreach ($massaged_values as $delta => $file) {
+    foreach ($massaged_values as $delta => $info) {
       $builder->addOperation(
         [$this->batchProcessor, 'batchOperation'],
-        [$delta, $file, $cached_values]
+        [$delta, $info, $cached_values]
       );
     }
     batch_set($builder->toArray());
-    $form_state->setRedirectUrl(Url::fromUri("internal:/node/{$cached_values['node']}/members"));
   }
 
 }

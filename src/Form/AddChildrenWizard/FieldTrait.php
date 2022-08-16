@@ -17,7 +17,7 @@ trait FieldTrait {
    *
    * @var \Drupal\Core\Entity\EntityFieldManagerInterface|null
    */
-  protected ?EntityFieldManagerInterface $entityFieldManager;
+  protected ?EntityFieldManagerInterface $entityFieldManager = NULL;
 
   /**
    * Helper; get field instance, given our required values.

@@ -14,7 +14,12 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 /**
  * Bulk children addition wizard base form.
  */
-class Form extends FormWizardBase {
+abstract class AbstractForm extends FormWizardBase {
+
+  const TEMPSTORE_ID = 'abstract.abstract';
+  const TYPE_SELECTION_FORM = MediaTypeSelectionForm::class;
+  const FILE_SELECTION_FORM = AbstractFileSelectionForm::class;
+  const BATCH_PROCESSOR_SERVICE_NAME = 'abstract.abstract';
 
   /**
    * The Islandora Utils service.
@@ -72,21 +77,10 @@ class Form extends FormWizardBase {
     return array_merge(
       parent::getParameters(),
       [
-        'tempstore_id' => 'islandora.upload_children',
+        'tempstore_id' => static::TEMPSTORE_ID,
         'current_user' => \Drupal::service('current_user'),
-        'batch_processor' => \Drupal::service('islandora.upload_children.batch_processor'),
       ]
     );
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getMachineName() {
-    return strtr("islandora_add_children_wizard__{userid}__{nodeid}", [
-      '{userid}' => $this->currentUser->id(),
-      '{nodeid}' => $this->nodeId,
-    ]);
   }
 
   /**
@@ -95,16 +89,16 @@ class Form extends FormWizardBase {
   public function getOperations($cached_values) {
     $ops = [];
 
-    $ops['child_type'] = [
+    $ops['type_selection'] = [
       'title' => $this->t('Type of children'),
-      'form' => TypeSelectionForm::class,
+      'form' => static::TYPE_SELECTION_FORM,
       'values' => [
         'node' => $this->nodeId,
       ],
     ];
-    $ops['child_files'] = [
+    $ops['file_selection'] = [
       'title' => $this->t('Files for children'),
-      'form' => FileSelectionForm::class,
+      'form' => static::FILE_SELECTION_FORM,
       'values' => [
         'node' => $this->nodeId,
       ],

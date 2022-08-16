@@ -14,7 +14,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Children addition wizard's first step.
  */
-class TypeSelectionForm extends FormBase {
+class MediaTypeSelectionForm extends FormBase {
 
   /**
    * Cacheable metadata that is instantiated and used internally.
@@ -61,87 +61,7 @@ class TypeSelectionForm extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'islandora_add_children_type_selection';
-  }
-
-  /**
-   * Memoization for ::getNodeBundleOptions().
-   *
-   * @var array|null
-   */
-  protected ?array $nodeBundleOptions = NULL;
-
-  /**
-   * Indicate presence of model field on node bundles.
-   *
-   * Populated as a side effect of ::getNodeBundleOptions().
-   *
-   * @var array|null
-   */
-  protected ?array $nodeBundleHasModelField = NULL;
-
-  /**
-   * Helper; get the node bundle options available to the current user.
-   *
-   * @return array
-   *   An associative array mapping node bundle machine names to their human-
-   *   readable labels.
-   */
-  protected function getNodeBundleOptions() : array {
-    if ($this->nodeBundleOptions === NULL) {
-      $this->nodeBundleOptions = [];
-      $this->nodeBundleHasModelField = [];
-
-      $access_handler = $this->entityTypeManager->getAccessControlHandler('node');
-      foreach ($this->entityTypeBundleInfo->getBundleInfo('node') as $bundle => $info) {
-        $access = $access_handler->createAccess(
-          $bundle,
-          NULL,
-          [],
-          TRUE
-        );
-        $this->cacheableMetadata->addCacheableDependency($access);
-        if (!$access->isAllowed()) {
-          continue;
-        }
-        $this->nodeBundleOptions[$bundle] = $info['label'];
-        $fields = $this->entityFieldManager->getFieldDefinitions('node', $bundle);
-        $this->nodeBundleHasModelField[$bundle] = array_key_exists(IslandoraUtils::MODEL_FIELD, $fields);
-      }
-    }
-
-    return $this->nodeBundleOptions;
-  }
-
-  /**
-   * Generates a mapping of taxonomy term IDs to their names.
-   *
-   * @return \Generator
-   *   The mapping of taxonomy term IDs to their names.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
-   */
-  protected function getModelOptions() : \Generator {
-    $terms = $this->entityTypeManager->getStorage('taxonomy_term')
-      ->loadTree('islandora_models', 0, NULL, TRUE);
-    foreach ($terms as $term) {
-      yield $term->id() => $term->getName();
-    }
-  }
-
-  /**
-   * Helper; map node bundles supporting the "has model" field, for #states.
-   *
-   * @return \Generator
-   *   Yields associative array mapping the string 'value' to the bundles which
-   *   have the given field.
-   */
-  protected function mapModelStates() : \Generator {
-    $this->getNodeBundleOptions();
-    foreach (array_keys(array_filter($this->nodeBundleHasModelField)) as $bundle) {
-      yield ['value' => $bundle];
-    }
+    return 'islandora_add_media_type_selection';
   }
 
   /**
@@ -237,33 +157,6 @@ class TypeSelectionForm extends FormBase {
       ]);
     $cached_values = $form_state->getTemporaryValue('wizard');
 
-    $form['bundle'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Content Type'),
-      '#description' => $this->t('Each child created will have this content type.'),
-      '#empty_value' => '',
-      '#default_value' => $cached_values['bundle'] ?? '',
-      '#options' => $this->getNodeBundleOptions(),
-      '#required' => TRUE,
-    ];
-
-    $model_states = iterator_to_array($this->mapModelStates());
-    $form['model'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Model'),
-      '#description' => $this->t('Each child will be tagged with this model.'),
-      '#options' => iterator_to_array($this->getModelOptions()),
-      '#empty_value' => '',
-      '#default_value' => $cached_values['model'] ?? '',
-      '#states' => [
-        'visible' => [
-          ':input[name="bundle"]' => $model_states,
-        ],
-        'required' => [
-          ':input[name="bundle"]' => $model_states,
-        ],
-      ],
-    ];
     $form['media_type'] = [
       '#type' => 'select',
       '#title' => $this->t('Media Type'),
@@ -297,17 +190,24 @@ class TypeSelectionForm extends FormBase {
   }
 
   /**
-   * {@inheritdoc}
+   * Helper; enumerate keys to persist in form state.
+   *
+   * @return string[]
+   *   The keys to be persisted in our temp value in form state.
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    $keys = [
-      'bundle',
-      'model',
+  protected static function keysToSave() {
+    return [
       'media_type',
       'use',
     ];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $cached_values = $form_state->getTemporaryValue('wizard');
-    foreach ($keys as $key) {
+    foreach (static::keysToSave() as $key) {
       $cached_values[$key] = $form_state->getValue($key);
     }
     $form_state->setTemporaryValue('wizard', $cached_values);

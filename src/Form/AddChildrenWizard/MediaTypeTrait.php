@@ -15,7 +15,7 @@ trait MediaTypeTrait {
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface|null
    */
-  protected ?EntityTypeManagerInterface $entityTypeManager;
+  protected ?EntityTypeManagerInterface $entityTypeManager = NULL;
 
   /**
    * Helper; get media type, given our required values.

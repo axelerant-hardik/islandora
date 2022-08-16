@@ -49,15 +49,23 @@ class Access implements ContainerInjectionInterface {
    * @return \Drupal\Core\Access\AccessResultInterface
    *   Whether we can or cannot show the "thing".
    */
-  public function checkAccess(RouteMatch $route_match) : AccessResultInterface {
-    $can_create_media = $this->utils->canCreateIslandoraEntity('media', 'media_type');
-    $can_create_node = $this->utils->canCreateIslandoraEntity('node', 'node_type');
+  public function childAccess(RouteMatch $route_match) : AccessResultInterface {
+    return AccessResult::allowedIf($this->utils->canCreateIslandoraEntity('node', 'node_type'))
+      ->andIf($this->mediaAccess($route_match));
 
-    if ($can_create_media && $can_create_node) {
-      return AccessResult::allowed();
-    }
+  }
 
-    return AccessResult::forbidden();
+  /**
+   * Check if the user can create any "Islandora" media.
+   *
+   * @param \Drupal\Core\Routing\RouteMatch $route_match
+   *   The current routing match.
+   *
+   * @return \Drupal\Core\Access\AccessResultInterface
+   *   Whether we can or cannot show the "thing".
+   */
+  public function mediaAccess(RouteMatch $route_match) : AccessResultInterface {
+    return AccessResult::allowedIf($this->utils->canCreateIslandoraEntity('media', 'media_type'));
   }
 
 }
