@@ -18,7 +18,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 /**
- * Children addition batch processor.
+ * Abstract addition batch processor.
  */
 abstract class AbstractBatchProcessor {
 
