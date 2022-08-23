@@ -19,7 +19,6 @@ abstract class AbstractForm extends FormWizardBase {
   const TEMPSTORE_ID = 'abstract.abstract';
   const TYPE_SELECTION_FORM = MediaTypeSelectionForm::class;
   const FILE_SELECTION_FORM = AbstractFileSelectionForm::class;
-  const BATCH_PROCESSOR_SERVICE_NAME = 'abstract.abstract';
 
   /**
    * The Islandora Utils service.
