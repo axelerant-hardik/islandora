@@ -185,7 +185,7 @@ function update_jsonld_included_namespaces() {
 function islandora_update_8007() {
   $module_handler = \Drupal::moduleHandler();
   if ($module_handler->moduleExists('ctools')) {
-    return t('The "@module_name" module is already enabled.', [
+    return t('The "@module_name" module is already enabled, no action necessary.', [
       '@module_name' => 'ctools',
     ]);
   }
