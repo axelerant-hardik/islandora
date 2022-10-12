@@ -91,7 +91,7 @@ abstract class AbstractBatchProcessor {
       $context['results'] = array_merge_recursive($context['results'], [
         'validation_violations' => $this->validationClassification($entities),
       ]);
-      $context['results']['count'] += 1;
+      $context['results']['count'] = ($context['results']['count'] ?? 0) + 1;
     }
     catch (HttpExceptionInterface $e) {
       $transaction->rollBack();

@@ -4,6 +4,7 @@ namespace Drupal\islandora\Form\AddChildrenWizard;
 
 use Drupal\Core\DependencyInjection\ClassResolverInterface;
 use Drupal\Core\Form\FormBuilderInterface;
+use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\TempStore\SharedTempStoreFactory;
@@ -57,12 +58,13 @@ abstract class AbstractForm extends FormWizardBase {
     ClassResolverInterface $class_resolver,
     EventDispatcherInterface $event_dispatcher,
     RouteMatchInterface $route_match,
+    RendererInterface $renderer,
     $tempstore_id,
     AccountProxyInterface $current_user,
     $machine_name = NULL,
     $step = NULL
   ) {
-    parent::__construct($tempstore, $builder, $class_resolver, $event_dispatcher, $route_match, $tempstore_id,
+    parent::__construct($tempstore, $builder, $class_resolver, $event_dispatcher, $route_match, $renderer, $tempstore_id,
       $machine_name, $step);
 
     $this->nodeId = $this->routeMatch->getParameter('node');
