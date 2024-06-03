@@ -2,6 +2,7 @@
 
 namespace Drupal\islandora\Form\AddChildrenWizard;
 
+use Drupal\enhanced_collection_pages\Form\ParentGroupInheritanceHelper;
 use Drupal\islandora\IslandoraUtils;
 use Drupal\node\NodeInterface;
 
@@ -35,6 +36,9 @@ class ChildBatchProcessor extends AbstractBatchProcessor {
     if ($node->save() !== SAVED_NEW) {
       throw new \Exception("Failed to create node.");
     }
+
+    // Assign the new node to the same group as parent.
+    ParentGroupInheritanceHelper::addEntityToParentGroup($node);
 
     return $node;
   }
